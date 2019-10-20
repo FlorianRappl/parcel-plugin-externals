@@ -1,0 +1,27 @@
+{
+  "name": "parcel-plugin-externals",
+  "version": "0.1.0",
+  "description": "A plugin for Parcel to omit declared externals from being included in the emitted bundles.",
+  "main": "index.js",
+  "typings": "index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "parcel-plugin",
+    "parcel-bundler",
+    "plugin",
+    "bundler",
+    "externals",
+    "bundle",
+    "peer",
+    "dependencies",
+    "optimize"
+  ],
+  "author": "Florian Rappl <mail@florian-rappl.de>",
+  "license": "MIT",
+  "devDependencies": {
+    "parcel-bundler": "1.x"
+  },
+  "dependencies": {}
+}

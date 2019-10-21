@@ -39,6 +39,8 @@ Consider the following snippet (from *package.json*):
 
 Here we tell the plugin to alias the `react` module with `React`. In this case we reference a global variable `React`, which obviously must exist.
 
+**Note**: Don't confuse this with the abilities coming from [parcel-plugin-html-externals](https://github.com/stoically/parcel-plugin-html-externals). Values that are non-string instances will be ignored. So you can actually use both plugins, `parcel-plugin-externals` and `parcel-plugin-html-externals` if you want to (or just one of the two).
+
 The object syntax is a shorthand for combining the keys and values for a replacement expression. The snippet above is acutally equalivant to:
 
 ```json

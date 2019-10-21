@@ -89,6 +89,7 @@ function retrieveExternals(rootDir) {
         return externals.concat(plain);
       } else if (typeof externals === "object") {
         return Object.keys(externals)
+          .filter(name => typeof externals[name] === 'string')
           .map(name => `${name} => ${externals[name]}`)
           .concat(plain);
       }

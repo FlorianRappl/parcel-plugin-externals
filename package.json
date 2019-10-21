@@ -1,6 +1,6 @@
 {
   "name": "parcel-plugin-externals",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A plugin for Parcel to omit declared externals from being included in the emitted bundles.",
   "main": "index.js",
   "typings": "index.d.ts",

@@ -1,6 +1,6 @@
 # parcel-plugin-externals
 
-[![Build Status](https://florianrappl.visualstudio.com/parcel-plugin-externals/_apis/build/status/FlorianRappl.parcel-plugin-externals?branchName=master)](https://florianrappl.visualstudio.com/parcel-plugin-externals/_build/latest?definitionId=12&branchName=master)
+[![Build Status](https://florianrappl.visualstudio.com/parcel-plugin-externals/_apis/build/status/FlorianRappl.parcel-plugin-externals?branchName=master)](https://florianrappl.visualstudio.com/parcel-plugin-externals/_build/latest?definitionId=14&branchName=master)
 [![npm](https://img.shields.io/npm/v/parcel-plugin-externals.svg)](https://www.npmjs.com/package/parcel-plugin-externals)
 [![GitHub tag](https://img.shields.io/github/tag/FlorianRappl/parcel-plugin-externals.svg)](https://github.com/FlorianRappl/parcel-plugin-externals/releases)
 [![GitHub issues](https://img.shields.io/github/issues/FlorianRappl/parcel-plugin-externals.svg)](https://github.com/FlorianRappl/parcel-plugin-externals/issues)
@@ -31,13 +31,25 @@ Consider the following snippet (from *package.json*):
 
 ```json
 {
+  "externals": {
+    "react": "React"
+  }
+}
+```
+
+Here we tell the plugin to alias the `react` module with `React`. In this case we reference a global variable `React`, which obviously must exist.
+
+The object syntax is a shorthand for combining the keys and values for a replacement expression. The snippet above is acutally equalivant to:
+
+```json
+{
   "externals": [
     "react => React"
   ]
 }
 ```
 
-Here we tell the plugin to alias the `react` module with `React`. In this case we reference a global variable `React`, which obviously must exist. Expressions could be more complex:
+Expressions could be more complex:
 
 ```json
 {
@@ -59,7 +71,7 @@ Alternatively, you could forward one module to another with `require`:
 }
 ```
 
-**Important**: This is an early version of the plugin. Please give feedback, especially regarding configuration and syntax. The idea is to keep the plugin simple and the options straight and to the point.
+**Important**: This is an early version of the plugin. Please give feedback [on GitHub](https://github.com/FlorianRappl/parcel-plugin-externals/issues), especially regarding configuration and syntax. The idea is to keep the plugin simple and the options straight and to the point.
 
 ## Changelog
 

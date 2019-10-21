@@ -83,7 +83,20 @@ function retrieveExternals(rootDir) {
       const content = readFileSync(path, "utf8");
       const data = JSON.parse(content);
       const plain = Object.keys(data.peerDependencies || {});
-      return (data.externals || []).concat(plain);
+      const externals = data.externals || [];
+
+      if (Array.isArray(externals)) {
+        return externals.concat(plain);
+      } else if (typeof externals === "object") {
+        return Object.keys(externals)
+          .map(name => `${name} => ${externals[name]}`)
+          .concat(plain);
+      }
+
+      console.warn(
+        `"externals" seem to be of wrong type. Expected <Array | object> but found <${typeof externals}>`
+      );
+      return plain;
     } catch (ex) {
       console.error(ex);
     }

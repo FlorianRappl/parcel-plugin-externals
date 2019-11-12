@@ -59,19 +59,39 @@ function resolvePackage(dir) {
   return resolve(dir, "package.json");
 }
 
-function provideSupportForExternals(proto, externalNames, targetDir) {
+function wrapFactory(ruleFactory) {
+  return path => {
+    const rule = ruleFactory(path);
+
+    if (rule !== undefined) {
+      return `/${rule}.${extension}`;
+    }
+
+    return path;
+  };
+}
+
+function makeResolver(targetDir, externalNames) {
   const externals = externalNames
     .map(name => resolveModule(name, targetDir))
     .filter(m => !!m);
-  const ra = proto.getLoadedAsset;
-  proto.getLoadedAsset = function(path) {
+
+  return path => {
     const [external] = externals.filter(m => m.path === path);
 
     if (external) {
       path = `/${external.rule}.${extension}`;
     }
 
-    return ra.call(this, path);
+    return path;
+  };
+}
+
+function provideSupportForExternals(proto, resolver) {
+  const ra = proto.getLoadedAsset;
+  proto.getLoadedAsset = function(path) {
+    const result = resolver(path);
+    return ra.call(this, result);
   };
 }
 
@@ -86,12 +106,32 @@ function retrieveExternals(rootDir) {
       const externals = data.externals || [];
 
       if (Array.isArray(externals)) {
-        return externals.concat(plain);
+        const values = externals.concat(plain);
+        return makeResolver(rootDir, values);
       } else if (typeof externals === "object") {
-        return Object.keys(externals)
-          .filter(name => typeof externals[name] === 'string')
+        const values = Object.keys(externals)
+          .filter(name => typeof externals[name] === "string")
           .map(name => `${name} => ${externals[name]}`)
           .concat(plain);
+        return makeResolver(rootDir, values);
+      } else if (typeof externals === "string") {
+        const externalPath = resolve(rootDir, externals);
+
+        if (!existsSync(externalPath)) {
+          console.warn(
+            `Could not find "${externals}". Looked in "${externalPath}".`
+          );
+        } else {
+          const resolver = require(externalPath);
+
+          if (typeof resolver === "function") {
+            return wrapFactory(resolver);
+          }
+
+          console.warn(
+            `Did not find a function. Expected to find something like "module.exports = function() {}".`
+          );
+        }
       }
 
       console.warn(

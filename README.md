@@ -75,6 +75,38 @@ Alternatively, you could forward one module to another with `require`:
 
 **Important**: This is an early version of the plugin. Please give feedback [on GitHub](https://github.com/FlorianRappl/parcel-plugin-externals/issues), especially regarding configuration and syntax. The idea is to keep the plugin simple and the options straight and to the point.
 
+### Dynamic Dependency Resolution
+
+Sometimes you want to externalize a whole set of dependencies, potentially by a given rule, e.g., `react-*` or similar. For such cases you can also refer to a module that does the replacement rule determination:
+
+```json
+{
+  "externals": "./tools/ruleFactory.js"
+}
+```
+
+The rule factory module is just a simple Node.js module that exports a function:
+
+```js
+const rx = /node_modules\/react-(.*?)\//;
+
+module.exports = function(path) {
+  const result = rx.exec(path);
+
+  if (result) {
+    const suffix = result[1];
+    const name = suffix[0].toUpperCase() + suffix.substr(1);
+    return `react-${suffix} => React${name}`;
+  }
+
+  return undefined;
+};
+```
+
+What you need to return is either `undefined` (i.e., the module will not be externalized) or the replacement rule.
+
+**Remark**: If the rule does not contain the forward `=>` slash it will be interpreted as `returnValue => require('returnValue')`, where `returnValue` is the part returned from the function.
+
 ## Changelog
 
 This project adheres to [semantic versioning](https://semver.org).

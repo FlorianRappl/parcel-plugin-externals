@@ -14,44 +14,59 @@ function resolveModule(rule, targetDir) {
       const moduleRoot = dirname(require.resolve(moduleDefinitionFile));
 
       if (typeof moduleDefinition.browser === "string") {
-        return {
-          name,
-          rule,
-          path: resolve(moduleRoot, moduleDefinition.browser)
-        };
+        return [
+          {
+            name,
+            rule,
+            path: resolve(moduleRoot, moduleDefinition.browser)
+          }
+        ];
       }
 
       if (typeof moduleDefinition.browser === "object") {
         Object.keys(moduleDefinition.browser).forEach(repl => {
           const desired = moduleDefinition.browser[repl];
-          replacements[resolve(moduleRoot, repl)] = resolve(
-            moduleRoot,
-            desired
-          );
+
+          if (desired) {
+            replacements[resolve(moduleRoot, repl)] = resolve(
+              moduleRoot,
+              desired
+            );
+          }
         });
       }
 
       if (typeof moduleDefinition.module === "string") {
         const modulePath = resolve(moduleRoot, moduleDefinition.module);
-        return {
-          name,
-          rule,
-          path: replacements[modulePath] || modulePath
-        };
+        return [
+          {
+            name,
+            rule,
+            path: replacements[modulePath] || modulePath
+          }
+        ];
       }
     }
 
     const directPath = require.resolve(name, {
       paths: [targetDir]
     });
-    return {
-      name,
-      rule,
-      path: replacements[directPath] || directPath
-    };
+
+    return [
+      ...Object.keys(replacements).map(r => ({
+        name,
+        rule,
+        path: replacements[r]
+      })),
+      {
+        name,
+        rule,
+        path: directPath
+      }
+    ];
   } catch (ex) {
     console.warn(`Could not find module ${name}.`);
-    return undefined;
+    return [];
   }
 }
 
@@ -72,9 +87,12 @@ function wrapFactory(ruleFactory) {
 }
 
 function makeResolver(targetDir, externalNames) {
-  const externals = externalNames
-    .map(name => resolveModule(name, targetDir))
-    .filter(m => !!m);
+  const externals = [];
+
+  for (const name of externalNames) {
+    const modules = resolveModule(name, targetDir);
+    externals.push(...modules);
+  }
 
   return path => {
     const [external] = externals.filter(m => m.path === path);

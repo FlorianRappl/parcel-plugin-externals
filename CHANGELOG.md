@@ -1,5 +1,11 @@
 # parcel-plugin-externals Changelog
 
+## 0.3.0
+
+- Implemented a way to dynamically choose what (and how) to externalize (#4)
+- Fixed exception on browser property set to false (#6)
+- Added support for referencing modules directly (#7)
+
 ## 0.2.0
 
 - Allow `externals` definition via object (#1)

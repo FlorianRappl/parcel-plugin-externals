@@ -2,18 +2,42 @@ const { readFileSync, existsSync } = require("fs");
 const { dirname, resolve } = require("path");
 const { extension, splitRule } = require("./common");
 
+function inspect(name) {
+  let scope = "";
+  let path = "";
+
+  if (name.startsWith("@")) {
+    scope = name.substr(0, name.indexOf("/"));
+    name = name.replace(`${scope}/`, "");
+  }
+
+  if (name.indexOf("/") !== -1) {
+    path = name.substr(name.indexOf("/") + 1);
+    name = name.replace(`/${path}`, "");
+  }
+
+  return {
+    scope,
+    name,
+    path,
+    fullName: scope ? `${scope}/${name}` : name
+  };
+}
+
 function resolveModule(rule, targetDir) {
   const { name } = splitRule(rule);
+  const { fullName, path } = inspect(name);
 
   try {
-    const moduleDefinitionFile = `${name}/package.json`;
+    const packageName = path ? `${fullName}/${path}` : fullName;
+    const moduleDefinitionFile = `${fullName}/package.json`;
     const moduleDefinition = require(moduleDefinitionFile);
     const replacements = {};
 
     if (moduleDefinition) {
       const moduleRoot = dirname(require.resolve(moduleDefinitionFile));
 
-      if (typeof moduleDefinition.browser === "string") {
+      if (!path && typeof moduleDefinition.browser === "string") {
         return [
           {
             name,
@@ -36,7 +60,7 @@ function resolveModule(rule, targetDir) {
         });
       }
 
-      if (typeof moduleDefinition.module === "string") {
+      if (!path && typeof moduleDefinition.module === "string") {
         const modulePath = resolve(moduleRoot, moduleDefinition.module);
         return [
           {
@@ -48,7 +72,7 @@ function resolveModule(rule, targetDir) {
       }
     }
 
-    const directPath = require.resolve(name, {
+    const directPath = require.resolve(packageName, {
       paths: [targetDir]
     });
 

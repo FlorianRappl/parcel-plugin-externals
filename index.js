@@ -1,6 +1,5 @@
-const { extension } = require("./common");
 const {
-  provideSupportForExternals,
+  extendBundlerWithExternals,
   retrieveExternals,
   findTarget
 } = require("./utils");
@@ -8,8 +7,5 @@ const {
 module.exports = function(bundler) {
   const target = findTarget(bundler.options.rootDir);
   const externals = retrieveExternals(target);
-  provideSupportForExternals(bundler.__proto__, externals, target);
-
-  bundler.addAssetType(extension, require.resolve("./ExternalAsset"));
-  bundler.addPackager(extension, require.resolve("./ExternalPackager"));
+  extendBundlerWithExternals(bundler, externals);
 };

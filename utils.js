@@ -110,6 +110,13 @@ function wrapFactory(ruleFactory) {
   };
 }
 
+function extendBundlerWithExternals(bundler, externals) {
+ provideSupportForExternals(bundler.__proto__, externals);
+
+ bundler.addAssetType(extension, require.resolve("./ExternalAsset"));
+ bundler.addPackager(extension, require.resolve("./ExternalPackager"));
+}
+
 function makeResolver(targetDir, externalNames) {
   const externals = [];
 
@@ -129,12 +136,50 @@ function makeResolver(targetDir, externalNames) {
   };
 }
 
+let original;
+
 function provideSupportForExternals(proto, resolver) {
-  const ra = proto.getLoadedAsset;
+  const ra = original || (original = proto.getLoadedAsset);
   proto.getLoadedAsset = function(path) {
     const result = resolver(path);
     return ra.call(this, result);
   };
+}
+
+function combineExternals(rootDir, plain, externals) {
+  if (Array.isArray(externals)) {
+    const values = externals.concat(plain);
+    return makeResolver(rootDir, values);
+  } else if (typeof externals === "object") {
+    const values = Object.keys(externals)
+      .filter(name => typeof externals[name] === "string")
+      .map(name => `${name} => ${externals[name]}`)
+      .concat(plain);
+    return makeResolver(rootDir, values);
+  } else if (typeof externals === "string") {
+    const externalPath = resolve(rootDir, externals);
+
+    if (!existsSync(externalPath)) {
+      console.warn(
+        `Could not find "${externals}". Looked in "${externalPath}".`
+      );
+    } else {
+      const resolver = require(externalPath);
+
+      if (typeof resolver === "function") {
+        return wrapFactory(resolver);
+      }
+
+      console.warn(
+        `Did not find a function. Expected to find something like "module.exports = function() {}".`
+      );
+    }
+  }
+
+  console.warn(
+    `"externals" seem to be of wrong type. Expected <Array | object> but found <${typeof externals}>`
+  );
+  return plain;
 }
 
 function retrieveExternals(rootDir) {
@@ -146,40 +191,7 @@ function retrieveExternals(rootDir) {
       const data = JSON.parse(content);
       const plain = Object.keys(data.peerDependencies || {});
       const externals = data.externals || [];
-
-      if (Array.isArray(externals)) {
-        const values = externals.concat(plain);
-        return makeResolver(rootDir, values);
-      } else if (typeof externals === "object") {
-        const values = Object.keys(externals)
-          .filter(name => typeof externals[name] === "string")
-          .map(name => `${name} => ${externals[name]}`)
-          .concat(plain);
-        return makeResolver(rootDir, values);
-      } else if (typeof externals === "string") {
-        const externalPath = resolve(rootDir, externals);
-
-        if (!existsSync(externalPath)) {
-          console.warn(
-            `Could not find "${externals}". Looked in "${externalPath}".`
-          );
-        } else {
-          const resolver = require(externalPath);
-
-          if (typeof resolver === "function") {
-            return wrapFactory(resolver);
-          }
-
-          console.warn(
-            `Did not find a function. Expected to find something like "module.exports = function() {}".`
-          );
-        }
-      }
-
-      console.warn(
-        `"externals" seem to be of wrong type. Expected <Array | object> but found <${typeof externals}>`
-      );
-      return plain;
+      return combineExternals(rootDir, plain, externals);
     } catch (ex) {
       console.error(ex);
     }
@@ -209,7 +221,9 @@ function findTarget(rootDir) {
 }
 
 module.exports = {
+  extendBundlerWithExternals,
   provideSupportForExternals,
   retrieveExternals,
+  combineExternals,
   findTarget
 };

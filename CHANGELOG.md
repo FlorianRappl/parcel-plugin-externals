@@ -1,5 +1,10 @@
 # parcel-plugin-externals Changelog
 
+## 0.3.1
+
+- Allow more flexible use as library
+- Typed exports of `utils`
+
 ## 0.3.0
 
 - Implemented a way to dynamically choose what (and how) to externalize (#4)

@@ -126,7 +126,8 @@ function makeResolver(targetDir, externalNames) {
   }
 
   return path => {
-    const [external] = externals.filter(m => realpathSync(m.path) === realpathSync(path));
+    const normalizedPath = realpathSync(path);
+    const [external] = externals.filter(m => realpathSync(m.path) === normalizedPath);
 
     if (external) {
       path = `/${external.rule}.${extension}`;

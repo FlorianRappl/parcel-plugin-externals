@@ -1,5 +1,9 @@
 # parcel-plugin-externals Changelog
 
+## 0.3.2
+
+- Support symlinks
+
 ## 0.3.1
 
 - Allow more flexible use as library

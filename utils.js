@@ -1,4 +1,4 @@
-const { readFileSync, existsSync } = require("fs");
+const { readFileSync, existsSync, realpathSync } = require("fs");
 const { dirname, resolve } = require("path");
 const { extension, splitRule } = require("./common");
 
@@ -126,7 +126,8 @@ function makeResolver(targetDir, externalNames) {
   }
 
   return path => {
-    const [external] = externals.filter(m => m.path === path);
+    const normalizedPath = realpathSync(path);
+    const [external] = externals.filter(m => realpathSync(m.path) === normalizedPath);
 
     if (external) {
       path = `/${external.rule}.${extension}`;

@@ -1,5 +1,9 @@
 # parcel-plugin-externals Changelog
 
+## 0.3.3
+
+- Fixed symlink resolution of externals
+
 ## 0.3.2
 
 - Support symlinks

@@ -117,17 +117,28 @@ function extendBundlerWithExternals(bundler, externals) {
  bundler.addPackager(extension, require.resolve("./ExternalPackager"));
 }
 
+function findRealPath(path) {
+  try {
+    return realpathSync(path);
+  } catch {
+    return path;
+  }
+}
+
 function makeResolver(targetDir, externalNames) {
   const externals = [];
 
   for (const name of externalNames) {
     const modules = resolveModule(name, targetDir);
-    externals.push(...modules);
+    externals.push(...modules.map(m => ({
+      ...m,
+      path: realpathSync(m.path),
+    })));
   }
 
   return path => {
-    const normalizedPath = realpathSync(path);
-    const [external] = externals.filter(m => realpathSync(m.path) === normalizedPath);
+    const normalizedPath = findRealPath(path);
+    const [external] = externals.filter(m => m.path === normalizedPath);
 
     if (external) {
       path = `/${external.rule}.${extension}`;

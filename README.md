@@ -88,7 +88,7 @@ Sometimes you want to externalize a whole set of dependencies, potentially by a 
 The rule factory module is just a simple Node.js module that exports a function:
 
 ```js
-const rx = /node_modules\/react-(.*?)\//;
+const rx = /react-(.*?)\//;
 
 module.exports = function(path) {
   const result = rx.exec(path);

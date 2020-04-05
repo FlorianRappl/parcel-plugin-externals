@@ -1,5 +1,10 @@
 # parcel-plugin-externals Changelog
 
+## 0.4.0
+
+- Improved the documentation
+- Added support for fake (virtual) modules (#9)
+
 ## 0.3.3
 
 - Fixed symlink resolution of externals

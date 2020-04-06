@@ -2,9 +2,13 @@ const { readFileSync, existsSync, realpathSync } = require("fs");
 const { dirname, resolve } = require("path");
 const { extension, splitRule } = require("./common");
 
-function inspect(name) {
+function inspect(name, alias) {
   let scope = "";
   let path = "";
+
+  if (alias[name] !== undefined) {
+    name = alias[name];
+  }
 
   if (name.startsWith("@")) {
     scope = name.substr(0, name.indexOf("/"));
@@ -24,9 +28,19 @@ function inspect(name) {
   };
 }
 
-function resolveModule(rule, targetDir) {
+function resolveModule(rule, targetDir, alias) {
   const { name } = splitRule(rule);
-  const { fullName, path } = inspect(name);
+  const { fullName, path } = inspect(name, alias);
+
+  if (fullName.startsWith('./') || fullName.startsWith('/')) {
+    return [
+      {
+        name,
+        rule,
+        path: resolve(targetDir, fullName),
+      }
+    ];
+  }
 
   try {
     const packageName = path ? `${fullName}/${path}` : fullName;
@@ -125,11 +139,11 @@ function findRealPath(path) {
   }
 }
 
-function makeResolver(targetDir, externalNames) {
+function makeResolver(targetDir, externalNames, alias) {
   const externals = [];
 
   for (const name of externalNames) {
-    const modules = resolveModule(name, targetDir);
+    const modules = resolveModule(name, targetDir, alias);
     externals.push(...modules.map(m => ({
       ...m,
       path: realpathSync(m.path),
@@ -158,16 +172,16 @@ function provideSupportForExternals(proto, resolver) {
   };
 }
 
-function combineExternals(rootDir, plain, externals) {
+function combineExternals(rootDir, plain, externals, alias) {
   if (Array.isArray(externals)) {
     const values = externals.concat(plain);
-    return makeResolver(rootDir, values);
+    return makeResolver(rootDir, values, alias);
   } else if (typeof externals === "object") {
     const values = Object.keys(externals)
       .filter(name => typeof externals[name] === "string")
       .map(name => `${name} => ${externals[name]}`)
       .concat(plain);
-    return makeResolver(rootDir, values);
+    return makeResolver(rootDir, values, alias);
   } else if (typeof externals === "string") {
     const externalPath = resolve(rootDir, externals);
 
@@ -203,7 +217,8 @@ function retrieveExternals(rootDir) {
       const data = JSON.parse(content);
       const plain = Object.keys(data.peerDependencies || {});
       const externals = data.externals || [];
-      return combineExternals(rootDir, plain, externals);
+      const alias = data.alias || {};
+      return combineExternals(rootDir, plain, externals, alias);
     } catch (ex) {
       console.error(ex);
     }

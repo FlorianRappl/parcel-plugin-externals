@@ -147,6 +147,24 @@ Here, we will identify that foo is an external alias and still externalize the c
 
 **Important**: If you have multiple virtual modules you should give them all unique paths. Otherwise, this plugin cannot distinguish between them.
 
+### Specialized Control
+
+If you need further fine-grained control (e.g., for switching between development and production builds) you can just use the factory function introduced above.
+
+To simplify you can also use the factory module to export the array directly.
+
+```js
+const isProduction = process.env.NODE_ENV === 'production';
+module.exports = isProduction ? [
+  'my-dep',
+  'react'
+] : [
+  'my-dep'
+];
+```
+
+This way you can get flexibility without sacrificing convenience.
+
 ## Changelog
 
 This project adheres to [semantic versioning](https://semver.org).

@@ -2,6 +2,14 @@ const { readFileSync, existsSync, realpathSync } = require("fs");
 const { dirname, resolve } = require("path");
 const { extension, splitRule } = require("./common");
 
+function makeFullName(scope, name) {
+  return scope ? `${scope}/${name}` : name;
+}
+
+function makePackagePath(fullName) {
+  return `${fullName}/package.json`;
+}
+
 function inspect(name, alias) {
   let scope = "";
   let path = "";
@@ -16,15 +24,21 @@ function inspect(name, alias) {
   }
 
   if (name.indexOf("/") !== -1) {
-    path = name.substr(name.indexOf("/") + 1);
-    name = name.replace(`/${path}`, "");
+    const full = makeFullName(scope, name);
+
+    try {
+      require.resolve(makePackagePath(full));
+    } catch (ex) {
+      path = name.substr(name.indexOf("/") + 1);
+      name = name.replace(`/${path}`, "");
+    }
   }
 
   return {
     scope,
     name,
     path,
-    fullName: scope ? `${scope}/${name}` : name
+    fullName: makeFullName(scope, name),
   };
 }
 
@@ -32,19 +46,18 @@ function resolveModule(rule, targetDir, alias) {
   const { name } = splitRule(rule);
   const { fullName, path } = inspect(name, alias);
 
-  if (fullName.startsWith('./') || fullName.startsWith('/')) {
+  if (fullName.startsWith("./") || fullName.startsWith("/")) {
     return [
       {
         name,
         rule,
         path: resolve(targetDir, fullName),
-      }
+      },
     ];
   }
 
   try {
-    const packageName = path ? `${fullName}/${path}` : fullName;
-    const moduleDefinitionFile = `${fullName}/package.json`;
+    const moduleDefinitionFile = makePackagePath(fullName);
     const moduleDefinition = require(moduleDefinitionFile);
     const replacements = {};
 
@@ -56,13 +69,13 @@ function resolveModule(rule, targetDir, alias) {
           {
             name,
             rule,
-            path: resolve(moduleRoot, moduleDefinition.browser)
-          }
+            path: resolve(moduleRoot, moduleDefinition.browser),
+          },
         ];
       }
 
       if (typeof moduleDefinition.browser === "object") {
-        Object.keys(moduleDefinition.browser).forEach(repl => {
+        Object.keys(moduleDefinition.browser).forEach((repl) => {
           const desired = moduleDefinition.browser[repl];
 
           if (desired) {
@@ -80,27 +93,28 @@ function resolveModule(rule, targetDir, alias) {
           {
             name,
             rule,
-            path: replacements[modulePath] || modulePath
-          }
+            path: replacements[modulePath] || modulePath,
+          },
         ];
       }
     }
 
+    const packageName = path ? `${fullName}/${path}` : fullName;
     const directPath = require.resolve(packageName, {
-      paths: [targetDir]
+      paths: [targetDir],
     });
 
     return [
-      ...Object.keys(replacements).map(r => ({
+      ...Object.keys(replacements).map((r) => ({
         name,
         rule,
-        path: replacements[r]
+        path: replacements[r],
       })),
       {
         name,
         rule,
-        path: directPath
-      }
+        path: directPath,
+      },
     ];
   } catch (ex) {
     console.warn(`Could not find module ${name}.`);
@@ -113,7 +127,7 @@ function resolvePackage(dir) {
 }
 
 function wrapFactory(ruleFactory) {
-  return path => {
+  return (path) => {
     const rule = ruleFactory(path);
 
     if (rule !== undefined) {
@@ -125,16 +139,16 @@ function wrapFactory(ruleFactory) {
 }
 
 function extendBundlerWithExternals(bundler, externals) {
- provideSupportForExternals(bundler.__proto__, externals);
+  provideSupportForExternals(bundler.__proto__, externals);
 
- bundler.addAssetType(extension, require.resolve("./ExternalAsset"));
- bundler.addPackager(extension, require.resolve("./ExternalPackager"));
+  bundler.addAssetType(extension, require.resolve("./ExternalAsset"));
+  bundler.addPackager(extension, require.resolve("./ExternalPackager"));
 }
 
 function findRealPath(path) {
   try {
     return realpathSync(path);
-  } catch {
+  } catch (ex) {
     return path;
   }
 }
@@ -144,15 +158,17 @@ function makeResolver(targetDir, externalNames, alias) {
 
   for (const name of externalNames) {
     const modules = resolveModule(name, targetDir, alias);
-    externals.push(...modules.map(m => ({
-      ...m,
-      path: realpathSync(m.path),
-    })));
+    externals.push(
+      ...modules.map((m) => ({
+        ...m,
+        path: realpathSync(m.path),
+      }))
+    );
   }
 
-  return path => {
+  return (path) => {
     const normalizedPath = findRealPath(path);
-    const [external] = externals.filter(m => m.path === normalizedPath);
+    const [external] = externals.filter((m) => m.path === normalizedPath);
 
     if (external) {
       path = `/${external.rule}.${extension}`;
@@ -166,22 +182,34 @@ let original;
 
 function provideSupportForExternals(proto, resolver) {
   const ra = original || (original = proto.getLoadedAsset);
-  proto.getLoadedAsset = function(path) {
+  proto.getLoadedAsset = function (path) {
     const result = resolver(path);
     return ra.call(this, result);
   };
 }
 
-function combineExternals(rootDir, plain, externals, alias) {
+function combineExternalsPrimitive(rootDir, plain, externals, alias) {
   if (Array.isArray(externals)) {
     const values = externals.concat(plain);
     return makeResolver(rootDir, values, alias);
   } else if (typeof externals === "object") {
     const values = Object.keys(externals)
-      .filter(name => typeof externals[name] === "string")
-      .map(name => `${name} => ${externals[name]}`)
+      .filter((name) => typeof externals[name] === "string")
+      .map((name) => `${name} => ${externals[name]}`)
       .concat(plain);
     return makeResolver(rootDir, values, alias);
+  } else if (typeof externals === "function") {
+    return wrapFactory(externals);
+  } else {
+    return undefined;
+  }
+}
+
+function combineExternals(rootDir, plain, externals, alias) {
+  const result = combineExternalsPrimitive(rootDir, plain, externals, alias);
+
+  if (result !== undefined) {
+    return result;
   } else if (typeof externals === "string") {
     const externalPath = resolve(rootDir, externals);
 
@@ -191,13 +219,19 @@ function combineExternals(rootDir, plain, externals, alias) {
       );
     } else {
       const resolver = require(externalPath);
+      const newResult = combineExternalsPrimitive(
+        rootDir,
+        plain,
+        resolver,
+        alias
+      );
 
-      if (typeof resolver === "function") {
-        return wrapFactory(resolver);
+      if (newResult !== undefined) {
+        return newResult;
       }
 
       console.warn(
-        `Did not find a function. Expected to find something like "module.exports = function() {}".`
+        `Did not find a function or array. Expected to find something like "module.exports = function() {}".`
       );
     }
   }
@@ -205,6 +239,7 @@ function combineExternals(rootDir, plain, externals, alias) {
   console.warn(
     `"externals" seem to be of wrong type. Expected <Array | object> but found <${typeof externals}>`
   );
+
   return plain;
 }
 
@@ -252,5 +287,5 @@ module.exports = {
   provideSupportForExternals,
   retrieveExternals,
   combineExternals,
-  findTarget
+  findTarget,
 };

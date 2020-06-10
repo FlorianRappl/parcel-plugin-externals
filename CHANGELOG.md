@@ -1,5 +1,12 @@
 # parcel-plugin-externals Changelog
 
+## 0.5.0
+
+- Improved path resolution for submodules
+- Fixed Node.js 8 compatibility for catch blocks (#17)
+- Enhanced documentation for production / development (#19)
+- Added alternative return type from factory module (#19)
+
 ## 0.4.0
 
 - Improved the documentation

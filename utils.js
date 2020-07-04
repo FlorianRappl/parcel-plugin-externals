@@ -1,4 +1,5 @@
 const { readFileSync, existsSync, realpathSync } = require("fs");
+const logger = require("@parcel/logger");
 const { dirname, resolve } = require("path");
 const { extension, splitRule } = require("./common");
 
@@ -117,7 +118,7 @@ function resolveModule(rule, targetDir, alias) {
       },
     ];
   } catch (ex) {
-    console.warn(`Could not find module ${name}.`);
+    logger.warn(`Could not find module ${name}.`);
     return [];
   }
 }
@@ -214,7 +215,7 @@ function combineExternals(rootDir, plain, externals, alias) {
     const externalPath = resolve(rootDir, externals);
 
     if (!existsSync(externalPath)) {
-      console.warn(
+      logger.warn(
         `Could not find "${externals}". Looked in "${externalPath}".`
       );
     } else {
@@ -230,13 +231,13 @@ function combineExternals(rootDir, plain, externals, alias) {
         return newResult;
       }
 
-      console.warn(
+      logger.warn(
         `Did not find a function or array. Expected to find something like "module.exports = function() {}".`
       );
     }
   }
 
-  console.warn(
+  logger.warn(
     `"externals" seem to be of wrong type. Expected <Array | object> but found <${typeof externals}>`
   );
 
@@ -255,7 +256,7 @@ function retrieveExternals(rootDir) {
       const alias = data.alias || {};
       return combineExternals(rootDir, plain, externals, alias);
     } catch (ex) {
-      console.error(ex);
+      logger.error(ex);
     }
   }
 

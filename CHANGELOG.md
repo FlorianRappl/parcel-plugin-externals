@@ -1,5 +1,9 @@
 # parcel-plugin-externals Changelog
 
+## 0.5.1
+
+- Changed to use `@parcel/logger` for logging (#21)
+
 ## 0.5.0
 
 - Improved path resolution for submodules

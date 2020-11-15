@@ -1,5 +1,9 @@
 # parcel-plugin-externals Changelog
 
+## 0.5.2
+
+- Fixed failed to bundle when external does not exist (#24)
+
 ## 0.5.1
 
 - Changed to use `@parcel/logger` for logging (#21)

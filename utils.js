@@ -160,7 +160,7 @@ function makeResolver(targetDir, externalNames, alias) {
   for (const name of externalNames) {
     const modules = resolveModule(name, targetDir, alias);
     externals.push(
-      ...modules.map((m) => ({
+      ...modules.filter(m => existsSync(m.path)).map((m) => ({
         ...m,
         path: realpathSync(m.path),
       }))
